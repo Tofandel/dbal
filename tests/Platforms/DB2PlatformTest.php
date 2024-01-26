@@ -128,7 +128,8 @@ class DB2PlatformTest extends AbstractPlatformTestCase
     {
         return [
             'ALTER TABLE mytable ' .
-            'ADD COLUMN quota INTEGER NOT NULL WITH DEFAULT',
+            'ADD COLUMN quota INTEGER NOT NULL WITH DEFAULT ' .
+            'RENAME COLUMN bar TO baz',
             "CALL SYSPROC.ADMIN_CMD ('REORG TABLE mytable')",
             "COMMENT ON COLUMN mytable.quota IS 'A comment'",
             "COMMENT ON COLUMN mytable.foo IS ''",
@@ -479,9 +480,9 @@ class DB2PlatformTest extends AbstractPlatformTestCase
             'RENAME COLUMN "create" TO reserved_keyword ' .
             'RENAME COLUMN "table" TO "from" ' .
             'RENAME COLUMN "select" TO "bar" ' .
-            'RENAME COLUMN quoted1 TO quoted ' .
-            'RENAME COLUMN quoted2 TO "and" ' .
-            'RENAME COLUMN quoted3 TO "baz"',
+            'RENAME COLUMN "quoted1" TO quoted ' .
+            'RENAME COLUMN "quoted2" TO "and" ' .
+            'RENAME COLUMN "quoted3" TO "baz"',
         ];
     }
 
@@ -541,7 +542,8 @@ class DB2PlatformTest extends AbstractPlatformTestCase
     public function testGeneratesAlterColumnSQL(
         string $changedProperty,
         Column $column,
-        ?string $expectedSQLClause = null
+        ?string $expectedSQLClause = null,
+        bool $shouldReorg = true
     ): void {
         $tableDiff                        = new TableDiff('foo');
         $tableDiff->fromTable             = new Table('foo');
@@ -553,7 +555,9 @@ class DB2PlatformTest extends AbstractPlatformTestCase
             $expectedSQL[] = 'ALTER TABLE foo ALTER COLUMN bar ' . $expectedSQLClause;
         }
 
-        $expectedSQL[] = "CALL SYSPROC.ADMIN_CMD ('REORG TABLE foo')";
+        if ($shouldReorg) {
+            $expectedSQL[] = "CALL SYSPROC.ADMIN_CMD ('REORG TABLE foo')";
+        }
 
         self::assertSame($expectedSQL, $this->platform->getAlterTableSQL($tableDiff));
     }
@@ -611,6 +615,7 @@ class DB2PlatformTest extends AbstractPlatformTestCase
                 'default',
                 new Column('bar', Type::getType(Types::INTEGER), ['autoincrement' => true, 'default' => 666]),
                 null,
+                false,
             ],
             [
                 'default',
