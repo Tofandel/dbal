@@ -278,7 +278,6 @@ class Table extends AbstractAsset
 
     /**
      * @throws LogicException
-     * @throws SchemaException
      */
     final public function renameColumn(string $oldName, string $newName): Column
     {
